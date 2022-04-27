@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <GL/glu.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -31,7 +33,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(680, 680, "Hello OpenGL: Triangle", NULL, NULL);
+    window = glfwCreateWindow(960, 640, "Hello OpenGL: Triangle", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -50,10 +52,10 @@ int main(void)
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     float pos[] = {
-        -0.5f, -0.5f, 0.0f, 0.0f,
-         0.5f, -0.5f, 1.0f, 0.0f,
-         0.5f,  0.5f, 1.0f, 1.0f,
-        -0.5f,  0.5f, 0.0f, 1.0f,
+        100.0f, 100.0f, 0.0f, 0.0f,
+        200.0f, 100.0f, 1.0f, 0.0f,
+        200.0f,  200.0f, 1.0f, 1.0f,
+        100.0f,  200.0f, 0.0f, 1.0f,
     };
 
     uint32_t indices[] = {
@@ -72,12 +74,20 @@ int main(void)
     va.AddBuffer(vb, layout);
     
     IndexBuffer ib(indices, 6);
+
+    glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 640.0f, -1.0f, 1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
+
+
+    glm::mat4 mvp = proj * view * model;
     
     Shader shader("res/shaders/Basic.shader");
     shader.Bind();
     shader.SetUniform4f("u_Color", 0.5, 0.15, 0.7, 1.0);
+    shader.SetUniformMat4f("u_MVP", mvp);
 
-    Texture texture("res/textures/Grass_texture2.png");
+    Texture texture("res/textures/Grass_texture.png");
     texture.Bind();
     shader.SetUniform1i("u_Texture", 0);
 
