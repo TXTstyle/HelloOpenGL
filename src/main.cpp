@@ -76,10 +76,10 @@ int main(void)
     ImGui_ImplOpenGL3_Init((char*)glGetString(330));
 
     float pos[] = {
-        100.0f, 100.0f, 0.0f, 0.0f,
-        200.0f, 100.0f, 1.0f, 0.0f,
-        200.0f,  200.0f, 1.0f, 1.0f,
-        100.0f,  200.0f, 0.0f, 1.0f,
+        -50.0f, -50.0f, 0.0f, 0.0f,
+        50.0f, -50.0f, 1.0f, 0.0f,
+        50.0f,  50.0f, 1.0f, 1.0f,
+        -50.0f,  50.0f, 0.0f, 1.0f,
     };
 
     uint32_t indices[] = {
@@ -100,7 +100,7 @@ int main(void)
     IndexBuffer ib(indices, 6);
 
     glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 640.0f, -1.0f, 1.0f);
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
     
     Shader shader("res/shaders/Basic.shader");
     shader.Bind();
@@ -117,7 +117,8 @@ int main(void)
 
     Renderer renderer;
 
-    glm::vec3 trans(200, 200, 0);
+    glm::vec3 transA(200, 200, 0);
+    glm::vec3 transB(400, 400, 0);
 
     float red = 0.0f;
     float add = 0.01f;
@@ -134,31 +135,26 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), trans);
-        glm::mat4 mvp = proj * view * model;
-
-
-        shader.Bind();
-        shader.SetUniform4f("u_Color", red, 0.15, 0.7, 1.0);
-        shader.SetUniformMat4f("u_MVP", mvp);
-
-        renderer.Draw(va, ib, shader);
-
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-        if (red > 1.0f)
         {
-            add = -0.01f;
-        } else if(red < 0.0f) {
-            add = 0.01f;
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), transA);
+            glm::mat4 mvp = proj * view * model;
+            shader.Bind();
+            shader.SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(va, ib, shader);
         }
-        
-        red += add;
+
+        {
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), transB);
+            glm::mat4 mvp = proj * view * model;
+            shader.SetUniformMat4f("u_MVP", mvp);
+            renderer.Draw(va, ib, shader);
+        }
 
         {
             ImGui::Begin("Hello, world!");
 
-            ImGui::SliderFloat3("Grass Pos", &trans.x, 0.0f, 960.0f);
+            ImGui::SliderFloat2("Grass Pos", &transA.x, 0.0f, 1010.0f);
+            ImGui::SliderFloat2("Grass2 Pos", &transB.x, 0.0f, 1010.0f);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
