@@ -10,14 +10,13 @@
 #include <string>
 #include <sstream>
 
-//#include "VertexBuffer.hpp"
 #include "VertexBufferLayout.hpp"
 #include "Renderer.hpp"
 #include "Texture.hpp"
 
-//#include "IndexBuffer.hpp"
-//#include "VertexArray.hpp"
-//#include "Shader.hpp"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 
 
@@ -51,6 +50,31 @@ int main(void)
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    //io.ConfigViewportsNoAutoMerge = true;
+    //io.ConfigViewportsNoTaskBarIcon = true;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    ImGuiStyle& style = ImGui::GetStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init((char*)glGetString(330));
+
     float pos[] = {
         100.0f, 100.0f, 0.0f, 0.0f,
         200.0f, 100.0f, 1.0f, 0.0f,
@@ -77,15 +101,10 @@ int main(void)
 
     glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 640.0f, -1.0f, 1.0f);
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
-
-
-    glm::mat4 mvp = proj * view * model;
     
     Shader shader("res/shaders/Basic.shader");
     shader.Bind();
     shader.SetUniform4f("u_Color", 0.5, 0.15, 0.7, 1.0);
-    shader.SetUniformMat4f("u_MVP", mvp);
 
     Texture texture("res/textures/Grass_texture.png");
     texture.Bind();
@@ -98,6 +117,8 @@ int main(void)
 
     Renderer renderer;
 
+    glm::vec3 trans(200, 200, 0);
+
     float red = 0.0f;
     float add = 0.01f;
     /* Loop until the user closes the window */
@@ -106,14 +127,24 @@ int main(void)
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorOccurredGL, NULL);
         /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+        renderer.Clear();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), trans);
+        glm::mat4 mvp = proj * view * model;
+
 
         shader.Bind();
         shader.SetUniform4f("u_Color", red, 0.15, 0.7, 1.0);
+        shader.SetUniformMat4f("u_MVP", mvp);
 
         renderer.Draw(va, ib, shader);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         if (red > 1.0f)
         {
@@ -124,12 +155,36 @@ int main(void)
         
         red += add;
 
+        {
+            ImGui::Begin("Hello, world!");
+
+            ImGui::SliderFloat3("Grass Pos", &trans.x, 0.0f, 960.0f);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+
+
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
         /* Poll for and process events */
         glfwPollEvents();
     }
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;

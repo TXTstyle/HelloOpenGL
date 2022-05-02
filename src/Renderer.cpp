@@ -12,7 +12,7 @@ void GLAPIENTRY errorOccurredGL(GLenum source,
   printf("Message from OpenGL:\nSource: 0x%x\nType: 0x%x\n"
          "Id: 0x%x\nSeverity: 0x%x\n", source, type, id, severity);
   printf("%s\n", message);
-  exit(-1);
+  //exit(-1);
 }
 
 void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const {
@@ -20,4 +20,8 @@ void Renderer::Draw(const VertexArray& va, const IndexBuffer& ib, const Shader& 
        va.Bind();
        ib.Bind();
        glDrawElements(GL_TRIANGLES, ib.GetCount(), GL_UNSIGNED_INT, nullptr);
+}
+
+void Renderer::Clear() {
+       glClear(GL_COLOR_BUFFER_BIT);
 }
