@@ -14,9 +14,9 @@
 #include "Renderer.hpp"
 #include "Texture.hpp"
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include <ImGUI/imgui.h>
+#include <ImGUI/imgui_impl_glfw.h>
+#include <ImGUI/imgui_impl_opengl3.h>
 
 
 
@@ -104,7 +104,6 @@ int main(void)
     
     Shader shader("res/shaders/Basic.shader");
     shader.Bind();
-    shader.SetUniform4f("u_Color", 0.5, 0.15, 0.7, 1.0);
 
     Texture texture("res/textures/Grass_texture.png");
     texture.Bind();
@@ -119,15 +118,15 @@ int main(void)
 
     glm::vec3 transA(200, 200, 0);
     glm::vec3 transB(400, 400, 0);
+    ImVec4 clearColor = ImVec4(0.53f, 0.81f, 0.94f, 1.00f);
 
-    float red = 0.0f;
-    float add = 0.01f;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(errorOccurredGL, NULL);
         /* Render here */
+        glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
         renderer.Clear();
 
         // Start the Dear ImGui frame
@@ -153,8 +152,10 @@ int main(void)
         {
             ImGui::Begin("Hello, world!");
 
-            ImGui::SliderFloat2("Grass Pos", &transA.x, 0.0f, 1010.0f);
-            ImGui::SliderFloat2("Grass2 Pos", &transB.x, 0.0f, 1010.0f);
+            ImGui::SliderFloat2("Grass Pos", &transA.x, 0.0f, 960.0f);
+            ImGui::SliderFloat2("Grass2 Pos", &transB.x, 0.0f, 960.0f);
+
+            ImGui::ColorEdit3("clear color", (float*)&clearColor);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
