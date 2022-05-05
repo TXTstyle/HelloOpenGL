@@ -21,6 +21,37 @@
 #define HEIGHT 640
 #define WIDTH 960
 
+float yaw = -90.0f;
+float pitch = 0.0f;
+float lastX = HEIGHT/2, lastY = WIDTH/2;
+bool firstMouse = true;
+float sensitivity = 0.1f;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) // initially set to true
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw   += xoffset;
+    pitch += yoffset;  
+
+    if(pitch > 89.0f)
+        pitch =  89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+}
+
 int main(void)
 {
     GLFWwindow* window;
@@ -152,10 +183,14 @@ int main(void)
     shader.Unbind();
 
     Renderer renderer;
-    glm::vec3 viewTrans(0.0f, -0.7f, -5.0f);
+    glm::vec3 camPos = glm::vec3(0.0f, 1.0f, 5.0f);
+    glm::vec3 camFront = glm::vec3(0.0f,  0.0f, -1.0f);
+    glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
     float rot[] = { 0, 0, 0 };
     ImVec4 clearColor = ImVec4(0.53f, 0.81f, 0.94f, 1.00f);
-    float speed = 0.05;
+    float speed = 3.0f;
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
 
     glEnable(GL_DEPTH_TEST);
     /* Loop until the user closes the window */
@@ -172,13 +207,31 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;  
+
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::radians(rot[0]), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[1]), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[2]), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        
-        view = glm::translate(view, viewTrans);
+        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+            glfwSetCursorPosCallback(window, mouse_callback);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);  
+            glfwSetCursorPosCallback(window, NULL);
+        }
+
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        camFront = glm::normalize(direction);
+
+        view = glm::lookAt(camPos, camPos + camFront, camUp);
         proj = glm::perspective(glm::radians(45.0f), ((float)WIDTH/HEIGHT), 0.1f, 100.0f);
 
         glm::mat4 mvp = proj * view * model;
@@ -186,30 +239,21 @@ int main(void)
         shader.Bind();
         shader.SetUniformMat4f("u_MVP", mvp);
         renderer.Draw(va, ib, shader);
-
-        viewTrans = glm::vec3(0.0f);
         
         {
-            float x = 0, y = 0, z = 0;
+            float cameraSpeed = speed * deltaTime;
             if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-                z += speed;
+                camPos += cameraSpeed * camFront;
             }
             if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-                z -= speed;
-            }
-            if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-                y -= speed;
-            }
-            if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-                y += speed;
-            }
-            if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-                x -= speed;
+                camPos -= cameraSpeed * camFront;
             }
             if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-                x += speed;
+                camPos -= glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed;
             }
-            viewTrans = glm::vec3(x, y, z);
+            if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                camPos += glm::normalize(glm::cross(camFront, camUp)) * cameraSpeed;
+            }
         }
 
         {
@@ -219,7 +263,8 @@ int main(void)
             ImGui::SliderFloat("Rot Y", &rot[1], -180.0f, 180.0f);
             ImGui::SliderFloat("Rot Z", &rot[2], -180.0f, 180.0f);
             
-            ImGui::SliderFloat("Cam Speed", &speed, 0.01f, 0.125f);
+            ImGui::SliderFloat("Cam Speed", &speed, 0.1f, 10.0f);
+            ImGui::SliderFloat("Cam Sens", &sensitivity, 0.01f, 1.0f);
 
             ImGui::ColorEdit3("clear color", (float*)&clearColor);
 
@@ -243,7 +288,7 @@ int main(void)
         glfwSwapBuffers(window);
 
         /* Poll for and process events */
-        glfwPollEvents();
+        glfwWaitEvents();
     }
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
