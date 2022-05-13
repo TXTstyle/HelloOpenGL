@@ -126,31 +126,34 @@ int main(void)
     */
 
     float pos[] = {
-        -0.5f, 0.0f, 0.5f,    0.0f, 0.0f,
-        -0.5f, 0.0f,-0.5f,    1.0f, 0.0f,
-         0.5f, 0.0f,-0.5f,    1.0f, 0.0f,
-         0.5f, 0.0f, 0.5f,    1.0f, 0.0f,
+        -0.5f,-0.5f,-0.5f,    0.0f, 0.0f,
+         0.5f,-0.5f,-0.5f,    1.0f, 0.0f,
+         0.5f,-0.5f, 0.5f,    1.0f, 1.0f,
+        -0.5f,-0.5f, 0.5f,    1.0f, 0.0f,
         
-        -0.5f, 1.0f, 0.5f,    0.0f, 1.0f,
-        -0.5f, 1.0f,-0.5f,    1.0f, 1.0f,
-         0.5f, 1.0f,-0.5f,    0.0f, 1.0f,
-         0.5f, 1.0f, 0.5f,    1.0f, 1.0f,
+        -0.5f, 0.5f,-0.5f,    0.0f, 1.0f,
+         0.5f, 0.5f,-0.5f,    1.0f, 1.0f,
+         0.5f, 0.5f, 0.5f,    0.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f,    1.0f, 1.0f
     };
     
     uint32_t indices[] = {
-        0, 1, 2,
-        0, 2, 3,
+        0, 3, 2,
+        0, 2, 1,
         0, 1, 5,
-        0, 4, 5,
-        1, 2, 5,
-        2, 5, 6,
-        2, 3, 6,
-        3, 6, 7,
-        0, 3, 4,
+        5, 4, 0,
+        6, 1, 2,
+        6, 5, 1,
+        2, 7, 6,
+        2, 3, 7,
+        0, 4, 3,
         3, 4, 7,
-        4, 5, 6,
-        4, 6, 7
+        6, 7, 4,
+        6, 4, 5,
     };
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -186,7 +189,7 @@ int main(void)
     glm::vec3 camPos = glm::vec3(0.0f, 1.0f, 5.0f);
     glm::vec3 camFront = glm::vec3(0.0f,  0.0f, -1.0f);
     glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    float rot[] = { 0, 0, 0 };
+    float rot[] = { 0, 180, 0 };
     ImVec4 clearColor = ImVec4(0.53f, 0.81f, 0.94f, 1.00f);
     float speed = 3.0f;
     float deltaTime = 0.0f;
@@ -197,7 +200,6 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_CULL_FACE);
         glDebugMessageCallback(errorOccurredGL, NULL);
         /* Render here */
         glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
@@ -224,6 +226,10 @@ int main(void)
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
         glfwSetCursorPosCallback(window, mouse_callback);
 
+        if(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
+        {
+            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        } else { glPolygonMode( GL_FRONT_AND_BACK, GL_FILL ); }
 
         float cameraSpeed = speed * deltaTime;
         if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
