@@ -197,6 +197,7 @@ int main(void)
     while (!glfwWindowShouldClose(window))
     {
         glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_CULL_FACE);
         glDebugMessageCallback(errorOccurredGL, NULL);
         /* Render here */
         glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
@@ -216,14 +217,20 @@ int main(void)
         model = glm::rotate(model, glm::radians(rot[1]), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[2]), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
-            glfwSetCursorPosCallback(window, mouse_callback);
-        } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);  
-            glfwSetCursorPosCallback(window, NULL);
-        }
+            exit(0);
+        } 
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);  
+        glfwSetCursorPosCallback(window, mouse_callback);
+
+
+        float cameraSpeed = speed * deltaTime;
+        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            speed = 6.0f;
+        } else if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            speed = 1.0f;
+        } else { speed = 2.5f; }
 
         glm::vec3 direction;
         direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -241,7 +248,7 @@ int main(void)
         renderer.Draw(va, ib, shader);
         
         {
-            float cameraSpeed = speed * deltaTime;
+            
             if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
                 camPos += cameraSpeed * camFront;
             }
@@ -288,7 +295,8 @@ int main(void)
         glfwSwapBuffers(window);
 
         /* Poll for and process events */
-        glfwWaitEvents();
+        glfwPollEvents();
+
     }
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
