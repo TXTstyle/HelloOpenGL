@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <array>
+#include <algorithm>
 
 #include "VertexBufferLayout.hpp"
 #include "Renderer.hpp"
@@ -18,14 +20,14 @@
 #include <ImGUI/imgui_impl_glfw.h>
 #include <ImGUI/imgui_impl_opengl3.h>
 
-#define HEIGHT 640
-#define WIDTH 960
+#define HEIGHT 720
+#define WIDTH 1280
 
 float yaw = -90.0f;
 float pitch = 0.0f;
 float lastX = HEIGHT/2, lastY = WIDTH/2;
 bool firstMouse = true;
-float sensitivity = 0.1f;
+float sensitivity = 0.075f;
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     if (firstMouse) // initially set to true
@@ -52,6 +54,97 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         pitch = -89.0f;
 }
 
+struct Vertex {
+    float Pos[3];
+    float TexCoords[2];
+    float TexId;
+};
+
+static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
+    
+    target->Pos[0] = -0.5f + x;
+    target->Pos[1] = -0.5f + y;
+    target->Pos[2] = -0.5f + z;
+    
+    target->TexCoords[0] = 0.0f;
+    target->TexCoords[1] = 0.0f;
+
+    target->TexId = 0.0f;
+    target++;
+    
+    target->Pos[0] =  0.5f + x;
+    target->Pos[1] = -0.5f + y;
+    target->Pos[2] = -0.5f + z;
+
+    target->TexCoords[0] = 1.0f;
+    target->TexCoords[1] = 0.0f;
+
+    target->TexId = 0.0f;
+    target++;
+    
+    target->Pos[0] =  0.5f + x;
+    target->Pos[1] = -0.5f + y;
+    target->Pos[2] =  0.5f + z;
+
+    target->TexCoords[0] = 1.0f;
+    target->TexCoords[1] = 1.0f;
+
+    target->TexId = 0.0f;
+    target++;
+    
+    target->Pos[0] = -0.5f + x;
+    target->Pos[1] = -0.5f + y;
+    target->Pos[2] =  0.5f + z;
+
+    target->TexCoords[0] = 1.0f;
+    target->TexCoords[1] = 0.0f;
+
+    target->TexId = 0.0f;
+    target++;
+
+    target->Pos[0] = -0.5f + x;
+    target->Pos[1] =  0.5f + y;
+    target->Pos[2] = -0.5f + z;
+
+    target->TexCoords[0] = 0.0f;
+    target->TexCoords[1] = 1.0f;
+
+    target->TexId = 0.0f;
+    target++;
+
+    target->Pos[0] =  0.5f + x;
+    target->Pos[1] =  0.5f + y;
+    target->Pos[2] = -0.5f + z;
+
+    target->TexCoords[0] = 1.0f;
+    target->TexCoords[1] = 1.0f;
+
+    target->TexId = 0.0f;
+    target++;
+
+    target->Pos[0] =  0.5f + x;
+    target->Pos[1] =  0.5f + y;
+    target->Pos[2] =  0.5f + z;
+
+    target->TexCoords[0] = 0.0f;
+    target->TexCoords[1] = 1.0f;
+
+    target->TexId = 0.0f;
+    target++;
+    
+    target->Pos[0] = -0.5f + x;
+    target->Pos[1] =  0.5f + y;
+    target->Pos[2] =  0.5f + z;
+
+    target->TexCoords[0] = 1.0f;
+    target->TexCoords[1] = 1.0f;
+
+    target->TexId = 0.0f;
+    target++;
+
+    return target;
+}
+
 int main(void)
 {
     GLFWwindow* window;
@@ -64,7 +157,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Hello OpenGL: Triangle", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Hello OpenGL: Cubes", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -106,38 +199,22 @@ int main(void)
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init((char*)glGetString(330));
+    
     /*
     float pos[] = {
-        -0.5f, 0.0f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.0f,-0.5f, 1.0f, 0.0f,
-         0.5f, 0.0f,-0.5f, 0.0f, 0.0f,
-         0.5f, 0.0f, 0.5f, 1.0f, 0.0f,
-         0.0f, 1.0f, 0.0f, 0.5f, 1.0f
-    };
-
-    uint32_t indices[] = {
-        0, 1, 2,
-        0, 2, 3,
-        0, 1, 4,
-        1, 2, 4,
-        2, 3, 4,
-        3, 0, 4
-    };
-    */
-
-    float pos[] = {
-        -0.5f,-0.5f,-0.5f,    0.0f, 0.0f,
-         0.5f,-0.5f,-0.5f,    1.0f, 0.0f,
-         0.5f,-0.5f, 0.5f,    1.0f, 1.0f,
-        -0.5f,-0.5f, 0.5f,    1.0f, 0.0f,
+        -0.5f,-0.5f,-0.5f,    0.0f, 0.0f,   0.0f,
+         0.5f,-0.5f,-0.5f,    1.0f, 0.0f,   0.0f,
+         0.5f,-0.5f, 0.5f,    1.0f, 1.0f,   0.0f,
+        -0.5f,-0.5f, 0.5f,    1.0f, 0.0f,   0.0f,
         
-        -0.5f, 0.5f,-0.5f,    0.0f, 1.0f,
-         0.5f, 0.5f,-0.5f,    1.0f, 1.0f,
-         0.5f, 0.5f, 0.5f,    0.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f,    1.0f, 1.0f
-    };
-    
-    uint32_t indices[] = {
+        -0.5f, 0.5f,-0.5f,    0.0f, 1.0f,   0.0f,
+         0.5f, 0.5f,-0.5f,    1.0f, 1.0f,   0.0f,
+         0.5f, 0.5f, 0.5f,    0.0f, 1.0f,   0.0f,
+        -0.5f, 0.5f, 0.5f,    1.0f, 1.0f,   0.0f
+    };*/
+
+    /*
+    uint32_t indices[] = { // 36 / 8v / 6s / 2t / 3600
         0, 3, 2,
         0, 2, 1,
         0, 1, 5,
@@ -150,26 +227,84 @@ int main(void)
         3, 4, 7,
         6, 7, 4,
         6, 4, 5,
-    };
+        
+    };*/
+
+    uint32_t indices[3600];
+    uint32_t indOffset = 0;
+    for (int i = 0; i < 3600; i += 36)
+    {
+        indices[i + 0]  = 0 + indOffset;
+        indices[i + 1]  = 3 + indOffset;
+        indices[i + 2]  = 2 + indOffset;
+        
+        indices[i + 3]  = 0 + indOffset;
+        indices[i + 4]  = 2 + indOffset;
+        indices[i + 5]  = 1 + indOffset;
+        
+        indices[i + 6]  = 0 + indOffset;
+        indices[i + 7]  = 1 + indOffset;
+        indices[i + 8]  = 5 + indOffset;
+        
+        indices[i + 9]  = 0 + indOffset;
+        indices[i + 10] = 5 + indOffset;
+        indices[i + 11] = 4 + indOffset;
+        
+        indices[i + 12] = 6 + indOffset;
+        indices[i + 13] = 1 + indOffset;
+        indices[i + 14] = 2 + indOffset;
+        
+        indices[i + 15] = 6 + indOffset;
+        indices[i + 16] = 5 + indOffset;
+        indices[i + 17] = 1 + indOffset;
+        
+        indices[i + 18] = 2 + indOffset;
+        indices[i + 19] = 7 + indOffset;
+        indices[i + 20] = 6 + indOffset;
+        
+        indices[i + 21] = 2 + indOffset;
+        indices[i + 22] = 3 + indOffset;
+        indices[i + 23] = 7 + indOffset;
+        
+        indices[i + 24] = 0 + indOffset;
+        indices[i + 25] = 4 + indOffset;
+        indices[i + 26] = 3 + indOffset;
+        
+        indices[i + 27] = 3 + indOffset;
+        indices[i + 28] = 4 + indOffset;
+        indices[i + 29] = 7 + indOffset;
+        
+        indices[i + 30] = 6 + indOffset;
+        indices[i + 31] = 4 + indOffset;
+        indices[i + 32] = 5 + indOffset;
+        
+        indices[i + 33] = 6 + indOffset;
+        indices[i + 34] = 7 + indOffset;
+        indices[i + 35] = 4 + indOffset;
+        
+        indOffset += 8;
+    }
+    
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(errorOccurredGL, NULL);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     VertexArray va;
-    VertexBuffer vb(pos, 8 * 5 * sizeof(float));
+    VertexBuffer vb(nullptr, 800 * sizeof(Vertex));
     VertexBufferLayout layout;
     layout.Push<float>(3);
     layout.Push<float>(2);
+    layout.Push<float>(1);
     va.AddBuffer(vb, layout);
 
     IndexBuffer ib(indices, sizeof(indices)/sizeof(float));
-    /*
-    glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 640.0f, -1.0f, 1.0f);
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-    */
     glm::mat4 proj = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
 
@@ -186,10 +321,9 @@ int main(void)
     shader.Unbind();
 
     Renderer renderer;
-    glm::vec3 camPos = glm::vec3(0.0f, 1.0f, 5.0f);
+    glm::vec3 camPos = glm::vec3(4.5f, 2.0f, 12.0f);
     glm::vec3 camFront = glm::vec3(0.0f,  0.0f, -1.0f);
     glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    float rot[] = { 0, 180, 0 };
     ImVec4 clearColor = ImVec4(0.53f, 0.81f, 0.94f, 1.00f);
     float speed = 3.0f;
     float deltaTime = 0.0f;
@@ -199,8 +333,23 @@ int main(void)
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(errorOccurredGL, NULL);
+
+        const int gridSize = 10;
+        std::array<Vertex, gridSize*gridSize*8> vertices;
+
+        Vertex* buffer = vertices.data();
+        for (int j = 0; j < gridSize; j++)
+        {
+            for (int l = 0; l < gridSize; l++)
+            {
+                buffer = CreateCube(buffer, j, (j+l)%2, l);
+            }
+            
+        }
+        vb.Bind();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), vertices.data());
+        
+        
         /* Render here */
         glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
         renderer.Clear();
@@ -215,9 +364,12 @@ int main(void)
         lastFrame = currentFrame;  
 
         glm::mat4 model = glm::mat4(1.0f);
+        /*
+        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[0]), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[1]), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+        */
 
         if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
@@ -233,7 +385,7 @@ int main(void)
 
         float cameraSpeed = speed * deltaTime;
         if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            speed = 6.0f;
+            speed = 8.0f;
         } else if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
             speed = 1.0f;
         } else { speed = 2.5f; }
@@ -271,15 +423,15 @@ int main(void)
 
         {
             ImGui::Begin("Hello, world!");
-
+            /*
             ImGui::SliderFloat("Rot X", &rot[0], -180.0f, 180.0f);
             ImGui::SliderFloat("Rot Y", &rot[1], -180.0f, 180.0f);
             ImGui::SliderFloat("Rot Z", &rot[2], -180.0f, 180.0f);
-            
+            */
             ImGui::SliderFloat("Cam Speed", &speed, 0.1f, 10.0f);
             ImGui::SliderFloat("Cam Sens", &sensitivity, 0.01f, 1.0f);
 
-            ImGui::ColorEdit3("clear color", (float*)&clearColor);
+            ImGui::ColorEdit3("Clear Color", (float*)&clearColor);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
