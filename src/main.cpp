@@ -11,6 +11,7 @@
 #include <sstream>
 #include <array>
 #include <algorithm>
+#include <memory>
 
 #include "VertexBufferLayout.hpp"
 #include "Renderer.hpp"
@@ -19,6 +20,8 @@
 #include <ImGUI/imgui.h>
 #include <ImGUI/imgui_impl_glfw.h>
 #include <ImGUI/imgui_impl_opengl3.h>
+
+#include <FastNoise/FastNoiseLite.h>
 
 #define HEIGHT 720
 #define WIDTH 1280
@@ -58,6 +61,7 @@ struct Vertex {
     float Pos[3];
     float TexCoords[2];
     float TexId;
+    float CubePos[3];
 };
 
 static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
@@ -70,6 +74,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 0.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
     
     target->Pos[0] =  0.5f + x;
@@ -80,6 +88,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 0.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
     
     target->Pos[0] =  0.5f + x;
@@ -90,6 +102,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 1.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
     
     target->Pos[0] = -0.5f + x;
@@ -100,6 +116,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 0.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
 
     target->Pos[0] = -0.5f + x;
@@ -110,6 +130,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 1.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
 
     target->Pos[0] =  0.5f + x;
@@ -120,6 +144,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 1.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
 
     target->Pos[0] =  0.5f + x;
@@ -130,6 +158,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 1.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
     
     target->Pos[0] = -0.5f + x;
@@ -140,6 +172,10 @@ static Vertex* CreateCube(Vertex* target,float x, float y, float z) {
     target->TexCoords[1] = 1.0f;
 
     target->TexId = 0.0f;
+
+    target->CubePos[0] = x;
+    target->CubePos[1] = y;
+    target->CubePos[2] = z;
     target++;
 
     return target;
@@ -230,9 +266,15 @@ int main(void)
         
     };*/
 
-    uint32_t indices[3600];
+    const uint32_t maxCubeGrid = 320; 
+    const uint32_t maxCubes = maxCubeGrid*maxCubeGrid;
+    const uint32_t maxVertices = maxCubes*8;
+    const uint32_t maxIndices = maxCubes*36;
+
+    //uint32_t indices[maxIndices];
+    std::vector<uint32_t> indices(maxIndices);
     uint32_t indOffset = 0;
-    for (int i = 0; i < 3600; i += 36)
+    for (int i = 0; i < maxIndices; i += 36)
     {
         indices[i + 0]  = 0 + indOffset;
         indices[i + 1]  = 3 + indOffset;
@@ -289,6 +331,7 @@ int main(void)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(errorOccurredGL, NULL);
@@ -296,32 +339,38 @@ int main(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    VertexArray va;
-    VertexBuffer vb(nullptr, 800 * sizeof(Vertex));
+    //VertexArray va;
+    std::unique_ptr<VertexArray> va = std::make_unique<VertexArray>();
+    //VertexBuffer vb(nullptr, maxVertices * sizeof(Vertex));
+    std::unique_ptr<VertexBuffer> vb = std::make_unique<VertexBuffer>(nullptr, maxVertices * sizeof(Vertex));
     VertexBufferLayout layout;
     layout.Push<float>(3);
     layout.Push<float>(2);
     layout.Push<float>(1);
-    va.AddBuffer(vb, layout);
+    layout.Push<float>(3);
+    va->AddBuffer(*vb, layout);
 
-    IndexBuffer ib(indices, sizeof(indices)/sizeof(float));
+    //IndexBuffer ib(indices, sizeof(indices)/sizeof(uint32_t));
+    std::unique_ptr<IndexBuffer> ib = std::make_unique<IndexBuffer>(indices.data(), indices.size());
     glm::mat4 proj = glm::mat4(1.0f);
     glm::mat4 view = glm::mat4(1.0f);
 
-    Shader shader("res/shaders/Basic.shader");
-    shader.Bind();
+    //Shader shader("res/shaders/Basic.shader");
+    std::unique_ptr<Shader> shader = std::make_unique<Shader>("res/shaders/Basic.shader");
+    shader->Bind();
 
     Texture texture("res/textures/Grass_texture.png");
     texture.Bind();
-    shader.SetUniform1i("u_Texture", 0);
+    shader->SetUniform1i("u_Texture", 0);
 
-    va.Unbind();
-    vb.Unbind();
-    ib.Unbind();
-    shader.Unbind();
+    va->Unbind();
+    vb->Unbind();
+    ib->Unbind();
+    shader->Unbind();
 
-    Renderer renderer;
-    glm::vec3 camPos = glm::vec3(4.5f, 2.0f, 12.0f);
+    //Renderer renderer;
+    std::unique_ptr<Renderer> renderer = std::make_unique<Renderer>();
+    glm::vec3 camPos = glm::vec3(0.0f, 10.0f, 0.0f);
     glm::vec3 camFront = glm::vec3(0.0f,  0.0f, -1.0f);
     glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
     ImVec4 clearColor = ImVec4(0.53f, 0.81f, 0.94f, 1.00f);
@@ -329,30 +378,31 @@ int main(void)
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    noise.SetFrequency(0.1f);
+
+    std::vector<Vertex> vertices(maxVertices);
+
+    Vertex* buffer = vertices.data();
+    for (uint j = 0; j < maxCubeGrid; j++)
+    {
+        for (uint l = 0; l < maxCubeGrid; l++)
+        {
+            buffer = CreateCube(buffer, j, ((int)(((noise.GetNoise((float)j/8, (float)l/8)+1)*100)-100))/2, l);
+        }
+        
+    }
+    vb->Bind();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), vertices.data());
+
     glEnable(GL_DEPTH_TEST);
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
-    {
-
-        const int gridSize = 10;
-        std::array<Vertex, gridSize*gridSize*8> vertices;
-
-        Vertex* buffer = vertices.data();
-        for (int j = 0; j < gridSize; j++)
-        {
-            for (int l = 0; l < gridSize; l++)
-            {
-                buffer = CreateCube(buffer, j, (j+l)%2, l);
-            }
-            
-        }
-        vb.Bind();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(Vertex), vertices.data());
-        
-        
+    {        
         /* Render here */
         glClearColor(clearColor.x * clearColor.w, clearColor.y * clearColor.w, clearColor.z * clearColor.w, clearColor.w);
-        renderer.Clear();
+        renderer->Clear();
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -364,6 +414,7 @@ int main(void)
         lastFrame = currentFrame;  
 
         glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model,glm::vec3(-((float)maxCubeGrid/2), 0.0f, -((float)maxCubeGrid/2)));
         /*
         model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rot[0]), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -385,10 +436,10 @@ int main(void)
 
         float cameraSpeed = speed * deltaTime;
         if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            speed = 8.0f;
+            speed = 55.0f;
         } else if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            speed = 1.0f;
-        } else { speed = 2.5f; }
+            speed = 1.5f;
+        } else { speed = 15.0f; }
 
         glm::vec3 direction;
         direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -397,13 +448,13 @@ int main(void)
         camFront = glm::normalize(direction);
 
         view = glm::lookAt(camPos, camPos + camFront, camUp);
-        proj = glm::perspective(glm::radians(45.0f), ((float)WIDTH/HEIGHT), 0.1f, 100.0f);
+        proj = glm::perspective(glm::radians(45.0f), ((float)WIDTH/HEIGHT), 0.1f, 500.0f);
 
         glm::mat4 mvp = proj * view * model;
 
-        shader.Bind();
-        shader.SetUniformMat4f("u_MVP", mvp);
-        renderer.Draw(va, ib, shader);
+        shader->Bind();
+        shader->SetUniformMat4f("u_MVP", mvp);
+        renderer->Draw(*va, *ib, *shader);
         
         {
             
@@ -432,6 +483,8 @@ int main(void)
             ImGui::SliderFloat("Cam Sens", &sensitivity, 0.01f, 1.0f);
 
             ImGui::ColorEdit3("Clear Color", (float*)&clearColor);
+
+            ImGui::Text("Cam Pos x: %.1f y: %.1f z: %.1f", camPos.x, camPos.y, camPos.z);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();

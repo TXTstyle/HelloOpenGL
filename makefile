@@ -1,5 +1,5 @@
 CXX	:=	clang++
-FLAGS	:=	-Wall -Wextra -std=c++17 -fdelayed-template-parsing
+FLAGS	:=	-Wall -Wextra -std=c++17 -O2 -fdelayed-template-parsing
 
 INCLUDE	:=	include
 SRC	:=	src
@@ -20,4 +20,4 @@ start:
 		./$(BIN)/$(EXE)
 
 clean:
-		-rm $(BIN)/*
+		-rm -f $(BIN)/*
